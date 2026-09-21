@@ -1,55 +1,86 @@
 #include <iostream>
 #include <random>
+#include <vector>
 
 using namespace std;
 
-double func(const double& x){
-    return x*x * -1 + 5; 
+//Программа вычисляет интеграл многомерной фунции double func
+
+//Функция принимает на вход вектор переменных и возвращает результат вычислений по заранее определённой формуле
+double func(const vector<double>& x){
+    return exp(-1 * (x[0]*x[0] + x[1]*x[1] + x[2]*x[2])) * cos(10*3.1415*x[0]) * cos(10*3.1415*x[1]) * cos(10*3.1415*x[2]) + 1; 
 }
 
+// Я принял решение изменить подход к расчёту интеграла тк 
+// прошлый алгоритм требовал заранее знать максимальное и минимальное
+// значения функции, чтобы ограничить область
+// и вычислить объём ограниченной области
+// это неудобно тк требует от пользователя заранее высчитывать тяжело выводимые параметры
+// так что теперь под работает на расчёте интеграла через среднее значение функции,
+// а не на подсчёте точек
+
+// Точка входа в программу. 
 int main(){
-    int inner, total = 0;
-    int num_of_dots;
+    int total = 0; //счётчик
+    int num_of_dots; //желаемое количество точек для расчёта
 
     cout << "Enter num_of_dots: ";
 
-    cin >> num_of_dots;
+    cin >> num_of_dots; //пользователь вводит количество точек
 
-    int min_x = 0;
-    float max_x = sqrt(5.0f);
-    float max_y = 5.0f;
-    float min_y = 0.0f;
+    // векторы min_x и max_x хранят области интегрирования по всем аргументам функции
+    // vector позволяет легко менять структуру программы и логику основной математической функции
+    // без необходимости долго дописывать каждую облать отдельно
 
-    float target = 7.45356f;
+    // видно, каждый из аргументов имеет область интегрирования от 0 до 2:
+    vector<float> min_x = {0.0, 0.0, 0.0}; 
+    vector<float> max_x = {2.0, 2.0, 2.0};
 
-    float Area = (max_y - min_y) * (max_x - min_x);
-
+    // Пеменная для хранения конечного результата
+    double result = 0.0;
     
-
+    // Начало основного цикла
     while (total < num_of_dots){
 
-        random_device rd;
-        mt19937 gen(rd());
+        random_device rd; // генерация сида
+        mt19937 gen(rd()); // 
 
-        uniform_real_distribution<double> distrib_x(min_x, max_x);
-        uniform_real_distribution<double> distrib_y(min_y, max_y);
-    
-        double rand_x = distrib_x(gen);
-        double rand_y = distrib_y(gen);
+        vector<double> Xs; // вектор аргументов, передаваемый в функцию
 
-        //cout << "rand_x: " << rand_x << " rand_y: " << rand_y << '\n';
-
-        if (rand_y <= func(rand_x)){
-            inner++;
+        //цикл для создания случайной точки в пространстве аргументов:
+        for (size_t i = 0; i < max_x.size(); ++i){
+            uniform_real_distribution<double> distrib_x(min_x[i], max_x[i]);
+            Xs.push_back(distrib_x(gen));
         }
+
+        // Результат вычислений прибавляется к result
+        // позже result будет поделено на количество точек выборки, 
+        // чтобы получить среднее значение функции 
+        result += func(Xs);
 
         total++;
     }
+    
+    // вот и то деление, теперь result хранит среднее значение функции func
+    result /= num_of_dots;
 
+    // Цикл нужен для того, чтобы вычислить значение интеграла
+    // Известно, что интеграл можно рассчитать как среднее_значение_функции * область_интегрирования
+    // в представленном примере:
+    // область_интегрирования = (max_x[0] - min_x[0])*(max_x[1] - min_x[1])*(max_x[2] - min_x[2]) = = 2 * 2 * 2 = 8
+    for (size_t i = 0; i < max_x.size(); ++i){
+        result *= (max_x[i] - min_x[i]);
+    };
 
-    float result = Area * inner / total;
+    // Вывод значения интеграла в консоль
     cout << "The result is: " << result << '\n';
-    cout << "Error: " << abs(target - result)/target * 100 << '%';
+
+    //ввод || вывод || точный результат
+    //100     7.94272  8.0          
+    //1000    8.00801  8.0
+    //10000   7.99965  8.0
+    //100000  8.00124  8.0
+    //1000000 7.99992  8.0   
 
     return 0;
 }
